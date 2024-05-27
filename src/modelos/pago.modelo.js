@@ -1,54 +1,121 @@
 import pkg from 'transbank-pos-sdk';
-
-// Incializando sdk POS de TBK
 const { POSAutoservicio } = pkg;
-const pos = new POSAutoservicio();
 
-// Depuración activada
+const pos = new POSAutoservicio();
 pos.setDebug(true);
 
-// Conectar POS
-const conectarPos = async () => {
-    try {
-        const port = await pos.autoconnect();
-        if (!port) {
-            console.log('No se encontró ningún POS conectado');
-            return null;
-        }
-        /* console.log('Connected to PORT:', port.path); */
-        return port;
-    } catch (error) {
-        console.log('Ocurrió un error inesperado:', error);
-        throw error;
-    }
+// Autoconectar al POS desde el primer puerto encontrado
+export const conectarPos = () => {
+    return pos.autoconnect()
+        .then(port => {
+            if (!port) {
+                throw new Error('No se encontraron puertos');
+            }
+            console.log('Conectado al puerto:', port.path);
+            return port;
+        });
 };
 
-// Desconectar POS
-const desconectarPos = async () => {
-    try {
-        await pos.disconnect();
-        return true;
-    } catch (error) {
-        console.log('Ocurrió un error inesperado:', error);
-        throw error;
-        return false;
-    }
-};
-
-// Ultima venta
-const obtenerUltimaVenta = async () => {
-    try {
-        pos.getLastSale().then((response) => {
-            console.log('getLastSale ejecutado. Respuesta: ', response);
+// Obtener la ultima menta
+export const obtenerUltimaVenta = () => {
+    return pos.getLastSale(true)
+        .then(response => {
             return response;
-        }).catch((err) => {
+        });
+};
+
+// Desconectar del POS
+export const desconectarPos = () => {
+    return pos.disconnect()
+        .then(() => {
+            console.log('POS desconectado correctamente');
+        });
+};
+
+// Obtener los Puertos disponibles
+export const obtenerPuertos = () => {
+    return pos.listPorts().then((ports) => {
+        return ports;
+    })
+}
+
+// Conectar con un puerto
+export const conectarPosPuerto = () => {
+    let portName = 'COM9'; // windows
+    return pos.connect(portName).then((response) => {
+        return response;
+    }).catch((err) => {
+        console.log('Ocurrió un error inesperado', { err });
+        return false;
+    })
+}
+
+// Cerrar día de ventas
+export const cerrarDiaVenta = () => {
+    return pos.closeDay(true).then((response) => {
+        return response;
+    }).catch((err) => {
+        console.log('Ocurrió un error inesperado', err);
+        return false;
+    });
+}
+
+// Cargar llaves 
+export const cargarLlaves = () => {
+    return pos.loadKeys().then((response) => {
+        console.log('loadKeys ejecutado. Respuesta: ', response);
+        return response;
+    }).catch((err) => {
+        console.log('Ocurrió un error inesperado', err);
+        return false;
+    });
+}
+
+// Pagar simple
+export const pagarSimple = (monto, ticket) => {
+    return pos.sale(monto, ticket, true, true).then((response) => {
+        return response;
+    }).catch((err) => {
+        console.log('Ocurrió un error inesperado', err);
+        return false;
+    });
+}
+
+// Revisar conexión con POS
+export const revisarConexionPOS = () => {
+    return pos.poll().then((res) => {
+        return res;
+    })
+        .catch((err) => {
+            console.log('Ocurrió un error inesperado', err);
+            return err;
+        });
+}
+
+// Transacción de inicialización
+export const transaccionInicializar = () => {
+    return pos.initialization().then((res) => {
+        console.log('Resultado ', res);
+        return res;
+    }).catch((err) => {
+        console.log("ocurrio un error inesperado", err);
+        return err;
+    })
+}
+
+// Respuesta transacción de inicialización
+export const respuestaTransaccionInicializar = () => {
+    return pos.initializationResponse().then((res) => {
+        console.log('Resultado ejecucion:', res)
+    })
+        .catch((err) => {
             console.log('Ocurrió un error inesperado', err);
         });
-    } catch (error) {
-        console.log('Ocurrió un error inesperado:', error);
-        throw error;
-        return false;
-    }
-};
+}
 
-export const PagoModelo = { conectarPos, desconectarPos };
+// Manejo de error de serie del POS
+pos.on('error', (err) => {
+    console.error('Error en el puerto serie:', err.message);
+});
+
+export const PagoModelo = { conectarPos, desconectarPos, obtenerUltimaVenta, obtenerPuertos, conectarPosPuerto, cerrarDiaVenta, cargarLlaves, pagarSimple };
