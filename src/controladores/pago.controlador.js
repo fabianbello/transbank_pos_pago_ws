@@ -41,6 +41,7 @@ const obtenerStatus = async (req, res) => {
 // Obtener ultima venta 
 const obtenerUltimaVenta = async (req, res, next) => {
     try {
+<<<<<<< HEAD
         PagoModelo.conectarPos()
             .then(() => {
                 return PagoModelo.obtenerUltimaVenta();
@@ -56,6 +57,23 @@ const obtenerUltimaVenta = async (req, res, next) => {
                 console.error('ERROR:', error.message);
                 next(error);
             });
+=======
+        estado = "Inicializando e intentando obtener utlima venta";
+        console.log("ESTADO: ", estado);
+        let ultimaVenta = await PagoModelo.obtenerUltimaVenta();
+        estado = "obteniendoo ultima venta";
+        console.log("ESTADO: "+ estado );
+        console.log("ULTIMA VENTA: "+ ultimaVenta );
+        if (!ultimaVenta) {
+            estado = "No se encontraron puertos";
+            console.log("ESTADO: ", estado);
+            return res.status(500).json({ message: 'No se encontraron puertos' });
+        }
+        else {
+            
+        }
+
+>>>>>>> 9358c5832673ca4fc1a06b03d5a96bb7de9f412d
     } catch (error) {
         console.log('ERROR:', error.message);
         next(error);
