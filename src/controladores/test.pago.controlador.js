@@ -89,40 +89,30 @@ const prueba = async (req, res, next) => {
 // Metodo pruebas
 const pruebaTransaccion = async (req, res, next) => {
     try {
-        posPrueba.listPorts().then((ports) => {
-            console.log(ports);
-            posPrueba.connect(ports[0].path).then((response) => {
-                console.log('Conectado correctamente');
-                posPrueba.loadKeys().then((response) => {
-                    console.log('loadKeys ejecutado. Respuesta: ', response);
-                    posPrueba.poll().then((res) => {
-                        let connectedToPort = posPrueba.getConnectedPort();
-                        console.log("PUERTO A CUAL ESTA CONECTADO: ", connectedToPort);
-                        console.log('Resultado pos conectado?:', res);
+            posPrueba.poll().then((respuestapull) => {
+                    let connectedToPort = posPrueba.getConnectedPort();
+                    console.log("PUERTO A CUAL ESTA CONECTADO: ", connectedToPort);
+                    console.log('Resultado pos conectado?:', respuestapull);
 
-                        // Venta simple sin estados intermedios
-                        posPrueba.sale(1500, '12423').then((response) => {
-                            console.log('sale finalizado. Respuesta: ', response);
-                        }).catch((err) => {
-                            console.log('Ocurrió un error inesperado', err);
-                        });
-                    })
-                        .catch((err) => {
-                            console.log('Ocurrió un error inesperado', err);
-                        });
+                    // Venta simple sin estados intermedios
+                    posPrueba.sale(586, '12423').then((response) => {
+                        console.log('sale finalizado. Respuesta: ', response);
+                        res.status(200).json({response});
+                    }).catch((err) => {
+                        console.log('Ocurrió un error inesperado', err);
+                        next(err);
+                    });
+                })
+                    .catch((err) => {
+                        console.log('Ocurrió un error inesperado', err);
+                        next(err);
+                    });
 
-                }).catch((err) => {
-                    console.log('Ocurrió un error inesperado', err);
-                });
-            }).catch((err) => {
-                console.log('Ocurrió un error inesperado', { err });
-            });
-        }).catch((err) => {
-            console.log('Ocurrió un error inesperado', err);
-        });
-    } catch (error) {
-        s
-    }
+                }catch(error){
+                    next(error);
+
+                }
+    
 }
 
 export const TestPagoControlador = { pagarAprobado, pagarRechazado, pruebaTransaccion, prueba };

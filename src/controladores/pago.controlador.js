@@ -1,11 +1,17 @@
 import { PagoModelo } from "../modelos/pago.modelo.js";
 import { HTTP_CODIGOS, POS_CODIGOS } from '../middleware/respuestaCodigos.js';
-
-import pkg from "transbank-pos-sdk";
+import logger from '../config/logger/logger.js';
+import fs from 'fs';
+import { exec } from 'child_process';
+import { jsPDF } from 'jspdf';
+/* import { print } from "pdf-to-printer"; */
+/* import pkg from "transbank-pos-sdk";
 const { POSAutoservicio } = pkg;
 
 const posPrueba = new POSAutoservicio()
-posPrueba.setDebug(true);
+posPrueba.setDebug(true); */
+import pkg from 'pdf-to-printer';
+const { print } = pkg;
 
 // Obtener estado del POS 
 const obtenerStatus = async (req, res) => {
@@ -35,66 +41,207 @@ const obtenerStatus = async (req, res) => {
         console.log('ERROR:', error.message);
         next(error);
     }
-
 };
 
-// Obtener ultima venta 
-const obtenerUltimaVenta = async (req, res, next) => {
+
+
+
+
+// Conectar POS
+const conectarPOS = async (req, res, next) => {
     try {
-<<<<<<< HEAD
+        const { monto, ticket } = req.body;
         PagoModelo.conectarPos()
-            .then(() => {
-                return PagoModelo.obtenerUltimaVenta();
-            })
-            .then(ultimaVenta => {
-                console.log('Retornando última venta:', ultimaVenta);
-                res.status(200).json(ultimaVenta);
-            })
-            .then(() => {
-                return PagoModelo.desconectarPos();
+            .then((response) => {
+                res.status(200).json({ conexion: response });
             })
             .catch(error => {
                 console.error('ERROR:', error.message);
                 next(error);
             });
-=======
-        estado = "Inicializando e intentando obtener utlima venta";
-        console.log("ESTADO: ", estado);
-        let ultimaVenta = await PagoModelo.obtenerUltimaVenta();
-        estado = "obteniendoo ultima venta";
-        console.log("ESTADO: "+ estado );
-        console.log("ULTIMA VENTA: "+ ultimaVenta );
-        if (!ultimaVenta) {
-            estado = "No se encontraron puertos";
-            console.log("ESTADO: ", estado);
-            return res.status(500).json({ message: 'No se encontraron puertos' });
-        }
-        else {
-            
-        }
-
->>>>>>> 9358c5832673ca4fc1a06b03d5a96bb7de9f412d
     } catch (error) {
         console.log('ERROR:', error.message);
         next(error);
     }
 };
 
-// Realizar cierre venta
+// Revisar conexion
+const revisarConexionPOS = async (req, res, next) => {
+    try {
+        const { monto, ticket } = req.body;
+
+        PagoModelo.revisarConexionPOS()
+            .then((response) => {
+                res.status(200).json({ conexion: response });
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Desconectar POS
+const desconectarPOS = async (req, res, next) => {
+    try {
+        const { monto, ticket } = req.body;
+
+        PagoModelo.desconectarPos()
+            .then((response) => {
+                res.status(200).json({ desconexion: response });
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Inicializar
+const inicializar = async (req, res, next) => {
+    try {
+        PagoModelo.transaccionInicializar()
+            .then((response) => {
+                res.status(200).json({ inicializacion: response });
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Respuesta inicializar
+const respuestaInicializar = async (req, res, next) => {
+    try {
+        PagoModelo.respuestaTransaccionInicializar()
+            .then((response) => {
+                res.status(200).json({ inicializacion: response });
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Cargar LLaves
+const cargarLlaves = async (req, res, next) => {
+    try {
+        PagoModelo.conectarPos()
+            .then(() => {
+                logger.info('Conectado y cargando llaves');
+                return PagoModelo.cargarLlaves();
+            })
+            .then(cargaLlaves => {
+                console.log('Carga de llaves: ', cargaLlaves);
+                logger.info('llaves cargadas con éxito');
+                res.status(HTTP_CODIGOS.OK).json(cargaLlaves);
+            })
+            .then(() => {
+                logger.info('Desconectando');
+                return PagoModelo.desconectarPos();
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                PagoModelo.desconectarPos();
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Pagar simple
+const pagarSimple = async (req, res, next) => {
+    try {
+        const { monto, ticket } = req.body;
+        PagoModelo.conectarPos()
+            .then(() => {
+                logger.info('Conectado y pagando');
+                return PagoModelo.pagarSimple(587, "8464");
+            })
+            .then(pagoSimple => {
+                logger.info('Transacción procesada');
+                console.log('Transacción: ', pagoSimple);
+                imprimirVoucher2(pagoSimple.voucher);
+                res.status(HTTP_CODIGOS.OK).json(pagoSimple);
+            })
+            .then(() => {
+                logger.info('Desconectando');
+                return PagoModelo.desconectarPos();
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                PagoModelo.desconectarPos();
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Obtener ultima venta completa
+const obtenerUltimaVenta = async (req, res, next) => {
+    try {
+        PagoModelo.conectarPos()
+            .then(() => {
+                logger.info('Conectado y obteniendo ultima venta');
+                return PagoModelo.obtenerUltimaVenta();
+            })
+            .then(ultimaVenta => {
+                logger.info('obtenido registro asociado a ultima venta');
+                console.log('Retornando última venta:', ultimaVenta);
+                imprimirVoucher2(ultimaVenta.voucher);
+                res.status(200).json(ultimaVenta);
+            })
+            .then(() => {
+                logger.info('Desconectando');
+                return PagoModelo.desconectarPos();
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Realizar cierre venta completo
 const cerrarDiaVenta = async (req, res, next) => {
     try {
         PagoModelo.conectarPos()
             .then(() => {
+                logger.info('Conectado y cerrando dia de venta');
                 return PagoModelo.cerrarDiaVenta();
             })
             .then(cierreDia => {
+                logger.info('Transacción de cierre de dia de venta');
                 console.log('Retornando cierre de dia:', cierreDia);
+                imprimirVoucher2(cierreDia.voucher);
                 res.status(200).json(cierreDia);
             })
             .then(() => {
                 return PagoModelo.desconectarPos();
             })
             .catch(error => {
+                logger.info('Desconectando');
                 console.error('ERROR:', error.message);
                 next(error);
             });
@@ -105,19 +252,13 @@ const cerrarDiaVenta = async (req, res, next) => {
 };
 
 // Cargar llaves 
-const cargarLlaves = async (req, res, next) => {
+const cargarLlavesOnly = async (req, res, next) => {
     try {
-        PagoModelo.conectarPos()
-            .then(() => {
-                return PagoModelo.cargarLlaves();
-            })
+        PagoModelo.cargarLlaves()
             .then(cargaLlaves => {
                 console.log('Retornando carga de llaves :', cargaLlaves);
                 res.status(200).json(cargaLlaves);
             })
-            .then(() => {
-                return PagoModelo.desconectarPos();
-            })
             .catch(error => {
                 console.error('ERROR:', error.message);
                 next(error);
@@ -128,21 +269,14 @@ const cargarLlaves = async (req, res, next) => {
     }
 };
 
-// Pago simple 
-const pagarSimple = async (req, res, next) => {
-    try {
-        const { monto, ticket } = req.body;
 
-        PagoModelo.conectarPos()
-            .then(() => {
-                return PagoModelo.pagarSimple(monto, ticket);
-            })
+// Pagar simple unitario
+const pagarSimpleOnly = async (req, res, next) => {
+    try {
+        PagoModelo.pagarSimple(153, "513")
             .then(pagoSimple => {
                 console.log('Transacción: ', pagoSimple);
-                res.status(HTTP_CODIGOS.OK).json({ pagado: pagoSimple.successful, descripcion: pagoSimple.responseMessage });
-            })
-            .then(() => {
-                return PagoModelo.desconectarPos();
+                res.status(HTTP_CODIGOS.OK).json(pagoSimple);
             })
             .catch(error => {
                 console.error('ERROR:', error.message);
@@ -154,6 +288,108 @@ const pagarSimple = async (req, res, next) => {
     }
 };
 
+// Realizar cierre venta
+const cerrarDiaVentaOnly = async (req, res, next) => {
+    try {
+        PagoModelo.cerrarDiaVenta()
+            .then(cierreDia => {
+                console.log('Retornando cierre de dia:', cierreDia);
+                res.status(200).json(cierreDia);
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Obtener ultima venta 
+const obtenerUltimaVentaOnly = async (req, res, next) => {
+    try {
+        PagoModelo.obtenerUltimaVenta()
+            .then((ultimaVenta) => {
+                res.status(200).json(ultimaVenta);
+            })
+            .catch(error => {
+                console.error('ERROR:', error.message);
+                next(error);
+            });
+    } catch (error) {
+        console.log('ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Imprimir voucher
+const imprimirVoucher = async (voucher) => {
+    const voucherText = voucher.join('\n');
+    logger.info('GUARDANDO EN ARCHIVO EL VOUCHER');
+    const filePath = './recursos/temporales/voucher.txt';
+    const content = 'Este es el contenido de mi archivo.';
+
+    fs.writeFile(filePath, voucherText, 'utf8', (err) => {
+        if (err) {
+            console.error('Error al guardar el archivo:', err);
+        } else {
+            const printerName = 'REXOD RMP-8300';
+            const command = `print /D:${printerName} ${filePath}`;
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`ERROOOOOOOR Error al imprimir el voucher: ${error.message}`);
+                }
+                if (stderr) {
+                    console.error(' ERROOOOOOOOR: '`stderr: ${stderr}`);
+                }
+                console.log(`Voucher impreso con éxito: ${stdout}`);
+            });
+        }
+    });
+
+
+};
+
+// Imprimir voucher
+const imprimirVoucher2 = async (voucher) => {
+    const voucherText = voucher.join('\n');
+    logger.info('GUARDANDO EN ARCHIVO EL VOUCHER');
+    const filePath = './recursos/temporales/voucher.txt';
+    const content = 'Este es el contenido de mi archivo.';
+
+    fs.writeFile(filePath, voucherText, 'utf8', async (err) => {
+        if (err) {
+            console.error('Error al guardar el archivo:', err);
+        } else {
+
+            const printerName = 'REXOD RMP-8300';
+            const command = `print /D:${printerName} ${filePath}`;
+
+            // Crear un nuevo objeto jsPDF
+            const doc = new jsPDF();
+
+            // Agregar texto a tu PDF
+            await doc.text(20, 20, voucherText);
+
+            // Guardar el PDF en el disco
+            await doc.save('./recursos/temporales/voucher.pdf');
+
+            // Para imprimir un documento PDF
+            print('./recursos/temporales/voucher.pdf').then(console.log("Imprimiendo"));
+
+            /* exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`ERROOOOOOOR Error al imprimir el voucher: ${error.message}`);
+                }
+                if (stderr) {
+                    console.error(' ERROOOOOOOOR: '`stderr: ${stderr}`);
+                }
+                console.log(`Voucher impreso con éxito: ${stdout}`);
+            }); */
+        }
+    });
+};
 
 function esperar(ms) {
     return new Promise(resolve => {
@@ -161,4 +397,4 @@ function esperar(ms) {
     });
 }
 
-export const PagoControlador = { obtenerStatus, obtenerUltimaVenta, cerrarDiaVenta, cargarLlaves, pagarSimple };
+export const PagoControlador = { obtenerStatus, obtenerUltimaVenta, cerrarDiaVenta, cargarLlaves, pagarSimple, conectarPOS, revisarConexionPOS, desconectarPOS, inicializar, respuestaInicializar, pagarSimpleOnly, cerrarDiaVentaOnly, obtenerUltimaVentaOnly, cargarLlavesOnly };

@@ -27,8 +27,9 @@ export const obtenerUltimaVenta = () => {
 // Desconectar del POS
 export const desconectarPos = () => {
     return pos.disconnect()
-        .then(() => {
+        .then((res) => {
             console.log('POS desconectado correctamente');
+            return res;
         });
 };
 
@@ -63,7 +64,6 @@ export const cerrarDiaVenta = () => {
 // Cargar llaves 
 export const cargarLlaves = () => {
     return pos.loadKeys().then((response) => {
-        console.log('loadKeys ejecutado. Respuesta: ', response);
         return response;
     }).catch((err) => {
         console.log('Ocurrió un error inesperado', err);
@@ -82,7 +82,7 @@ export const pagarSimple = (monto, ticket) => {
 }
 
 // Revisar conexión con POS
-export const revisarConexionPOS = () => {
+export const revisarConexionPOS = async () => {
     return pos.poll().then((res) => {
         return res;
     })
@@ -95,7 +95,6 @@ export const revisarConexionPOS = () => {
 // Transacción de inicialización
 export const transaccionInicializar = () => {
     return pos.initialization().then((res) => {
-        console.log('Resultado ', res);
         return res;
     }).catch((err) => {
         console.log("ocurrio un error inesperado", err);
@@ -106,10 +105,11 @@ export const transaccionInicializar = () => {
 // Respuesta transacción de inicialización
 export const respuestaTransaccionInicializar = () => {
     return pos.initializationResponse().then((res) => {
-        console.log('Resultado ejecucion:', res)
+        return res;
     })
         .catch((err) => {
             console.log('Ocurrió un error inesperado', err);
+            return err;
         });
 }
 
@@ -118,4 +118,4 @@ pos.on('error', (err) => {
     console.error('Error en el puerto serie:', err.message);
 });
 
-export const PagoModelo = { conectarPos, desconectarPos, obtenerUltimaVenta, obtenerPuertos, conectarPosPuerto, cerrarDiaVenta, cargarLlaves, pagarSimple };
+export const PagoModelo = { conectarPos, desconectarPos, obtenerUltimaVenta, obtenerPuertos, conectarPosPuerto, cerrarDiaVenta, cargarLlaves, pagarSimple, revisarConexionPOS, transaccionInicializar, respuestaTransaccionInicializar };

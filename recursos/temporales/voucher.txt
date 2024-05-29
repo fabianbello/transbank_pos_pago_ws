@@ -1,0 +1,11 @@
+     REPORTE DE CIERRE DEL TERMINAL     
+           Pruebas UX100 Desa           
+          Huerfanos 770 Piso 8          
+                Santiago                
+          597029414300-U18.1L3          
+FECHA            HORA           TERMINAL
+29/05/24        11:28:49        70001031
+                                        
+                 NUMERO            TOTAL
+----------------------------------------
+TOTAL CAPTURAS     000               $ 0
